@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ПРЕ / ПЕРЕ — игра на соответствия</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(255, 213, 128, 0.35), transparent 35%),
+      radial-gradient(circle at bottom right, rgba(0, 220, 220, 0.25), transparent 35%),
+      linear-gradient(135deg, #071629, #10243d 45%, #24152b);
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .game {
+    width: min(1200px, 96vw);
+    margin: 0 auto;
+    padding: 18px 0 28px;
+  }
+
+  h1 {
+    margin: 0 0 10px;
+    text-align: center;
+    font-size: clamp(24px, 4vw, 46px);
+    color: #ffcf7a;
+    text-shadow: 0 0 14px rgba(255, 185, 80, 0.8);
+  }
+
+  .subtitle {
+    text-align: center;
+    margin-bottom: 14px;
+    color: #c8f8ff;
+    font-size: clamp(15px, 2.4vw, 18px);
+    line-height: 1.35;
+  }
+
+  .panel {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .counter {
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 14px rgba(0, 255, 255, 0.18);
+    font-size: clamp(15px, 2.4vw, 18px);
+  }
+
+  .btn {
+    border: none;
+    cursor: pointer;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ffb84d, #ff6f61);
+    color: #111;
+    font-weight: bold;
+    font-size: clamp(14px, 2.3vw, 16px);
+    box-shadow: 0 0 16px rgba(255, 150, 70, 0.45);
+  }
+
+  .targets-title,
+  .cards-title {
+    margin: 14px 0 9px;
+    text-align: center;
+    font-size: clamp(18px, 3vw, 21px);
+    color: #ffffff;
+  }
+
+  .targets {
+    min-height: 260px;
+    padding: 18px;
+    border-radius: 26px;
+    background: rgba(0, 255, 255, 0.08);
+    border: 1px solid rgba(129, 245, 255, 0.35);
+    box-shadow: inset 0 0 28px rgba(0, 255, 255, 0.08);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .target {
+    position: relative;
+    min-height: 112px;
+    padding: 12px;
+    border-radius: 18px;
+    background: rgba(255, 221, 161, 0.18);
+    border: 2px dashed rgba(255, 217, 139, 0.75);
+    box-shadow: 0 0 16px rgba(255, 198, 93, 0.18);
+    transition: 0.2s;
+  }
+
+  .target.active {
+    transform: translateY(-3px);
+    background: rgba(255, 221, 161, 0.28);
+    box-shadow: 0 0 28px rgba(255, 198, 93, 0.45);
+  }
+
+  .target-name {
+    text-align: center;
+    font-size: clamp(21px, 3vw, 34px);
+    font-weight: bold;
+    color: #fff3c9;
+    text-shadow: 0 0 10px rgba(255, 200, 95, 0.65);
+    margin-bottom: 10px;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .slot {
+    min-height: 38px;
+    margin-top: 6px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.15);
+    padding: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cards {
+    min-height: 230px;
+    padding: 18px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255,255,255,0.22);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+  }
+
+  .card {
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+    padding: 9px 12px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #55f0df, #2e9bff);
+    color: #04121e;
+    font-size: clamp(16px, 2.4vw, 19px);
+    font-weight: bold;
+    box-shadow: 0 0 14px rgba(72, 235, 255, 0.45);
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 5;
+  }
+
+  .card:active {
+    cursor: grabbing;
+  }
+
+  .card.fixed {
+    cursor: default;
+    font-size: 15px;
+    padding: 6px 9px;
+    background: linear-gradient(135deg, #d7ffd6, #a6ffb4);
+    box-shadow: 0 0 10px rgba(144, 255, 168, 0.55);
+  }
+
+  .card.dragging {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: scale(1.08);
+    box-shadow: 0 0 26px rgba(255, 255, 255, 0.85);
+  }
+
+  .message {
+    min-height: 34px;
+    text-align: center;
+    font-size: clamp(17px, 3vw, 20px);
+    color: #ffdf91;
+    margin-top: 12px;
+    font-weight: bold;
+  }
+
+  .finish {
+    display: none;
+    margin: 16px auto 0;
+    max-width: 650px;
+    padding: 20px;
+    border-radius: 24px;
+    text-align: center;
+    background: rgba(255, 211, 124, 0.16);
+    border: 1px solid rgba(255, 215, 130, 0.5);
+    box-shadow: 0 0 30px rgba(255, 190, 90, 0.35);
+    font-size: clamp(20px, 4vw, 24px);
+    color: #fff1c7;
+  }
+
+  @media (max-width: 920px) {
+    .game {
+      width: 98vw;
+      padding: 12px 0 20px;
+    }
+
+    .targets {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px;
+      border-radius: 20px;
+    }
+
+    .target {
+      min-height: 92px;
+      padding: 9px;
+      border-radius: 15px;
+    }
+
+    .target-name {
+      font-size: clamp(19px, 4.8vw, 28px);
+      margin-bottom: 7px;
+    }
+
+    .slot {
+      min-height: 34px;
+    }
+
+    .cards {
+      padding: 12px;
+      gap: 8px;
+      border-radius: 20px;
+    }
+
+    .card {
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: clamp(15px, 4vw, 18px);
+    }
+
+    .card.fixed {
+      font-size: 13px;
+      padding: 5px 7px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(255, 213, 128, 0.32), transparent 38%),
+        radial-gradient(circle at bottom right, rgba(0, 220, 220, 0.22), transparent 38%),
+        linear-gradient(135deg, #071629, #10243d 45%, #24152b);
+    }
+
+    .game {
+      width: 100vw;
+      padding: 10px 7px 18px;
+    }
+
+    h1 {
+      font-size: 23px;
+      line-height: 1.12;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      padding: 0 6px;
+    }
+
+    .panel {
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .counter,
+    .btn {
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    .targets-title,
+    .cards-title {
+      margin: 11px 0 7px;
+      font-size: 17px;
+    }
+
+    .targets {
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 9px;
+      border-radius: 18px;
+    }
+
+    .target {
+      min-height: 78px;
+      padding: 8px;
+      border-radius: 14px;
+    }
+
+    .target-name {
+      font-size: 25px;
+      margin-bottom: 5px;
+    }
+
+    .slot {
+      min-height: 32px;
+      border-radius: 10px;
+    }
+
+    .cards {
+      min-height: 210px;
+      padding: 10px;
+      gap: 7px;
+      border-radius: 18px;
+    }
+
+    .card {
+      width: calc(50% - 6px);
+      text-align: center;
+      padding: 9px 7px;
+      font-size: 16px;
+      border-radius: 12px;
+    }
+
+    .card.fixed {
+      width: auto;
+      max-width: 100%;
+      font-size: 13px;
+      padding: 5px 7px;
+    }
+
+    .card.dragging {
+      width: auto;
+      max-width: 88vw;
+    }
+  }
+</style>
+</head>
+
+<body>
+<div class="game">
+  <h1>ПРЕ / ПЕРЕ: найди соответствие</h1>
+
+  <div class="subtitle">
+    Перетащи нижнюю карточку к подходящей верхней карточке-значению.
+  </div>
+
+  <div class="panel">
+    <div class="counter">Баллы: <span id="score">0</span></div>
+    <div class="counter">Ошибки: <span id="errors">0</span></div>
+    <button class="btn" onclick="restartGame()">Начать заново</button>
+  </div>
+
+  <div class="targets-title">Неподвижные карточки</div>
+  <div class="targets" id="targets"></div>
+
+  <div class="cards-title">Передвижные карточки</div>
+  <div class="cards" id="cards"></div>
+
+  <div class="message" id="message"></div>
+
+  <div class="finish" id="finish">
+    🚀 Отлично! Все соответствия найдены!
+  </div>
+</div>
+
+<script>
+const TARGETS = [
+  "переделать",
+  "перечить",
+  "прервать",
+  "перевёрнутый",
+  "перенести",
+  "пересилить",
+  "передаётся",
+  "перестать",
+  "перегородило",
+  "переходящий",
+  "проходящий"
+];
+
+const WORDS = [
+  { word: "превратить", target: "переделать" },
+  { word: "преобразовать", target: "переделать" },
+
+  { word: "пререкаться", target: "перечить" },
+  { word: "препираться", target: "перечить" },
+  { word: "беспрекословно", target: "перечить" },
+  { word: "прекословить", target: "перечить" },
+
+  { word: "превратно", target: "перевёрнутый" },
+  { word: "превратный", target: "перевёрнутый" },
+
+  { word: "предание", target: "передаётся" },
+
+  { word: "прекратить", target: "перестать" },
+  { word: "непрестанно", target: "перестать" },
+  { word: "беспрестанно", target: "перестать" },
+
+  { word: "прервать", target: "прервать" },
+  { word: "пресечь", target: "прервать" },
+
+  { word: "преграда", target: "перегородило" },
+  { word: "препятствия", target: "перегородило" },
+  { word: "препона", target: "перегородило" },
+
+  { word: "превозмочь", target: "пересилить" },
+  { word: "преодоление", target: "пересилить" },
+
+  { word: "претерпеть", target: "перенести" },
+
+  { word: "преходящий", target: ["проходящий", "переходящий"] }
+];
+
+let score = 0;
+let errors = 0;
+let placed = 0;
+let dragged = null;
+let offsetX = 0;
+let offsetY = 0;
+let originalParent = null;
+let originalNext = null;
+
+const targetsEl = document.getElementById("targets");
+const cardsEl = document.getElementById("cards");
+const scoreEl = document.getElementById("score");
+const errorsEl = document.getElementById("errors");
+const messageEl = document.getElementById("message");
+const finishEl = document.getElementById("finish");
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function createTargets() {
+  targetsEl.innerHTML = "";
+
+  TARGETS.forEach(name => {
+    const target = document.createElement("div");
+    target.className = "target";
+    target.dataset.target = name;
+
+    target.innerHTML = `
+      <div class="target-name">${name}</div>
+      <div class="slot"></div>
+    `;
+
+    targetsEl.appendChild(target);
+  });
+}
+
+function createCards() {
+  cardsEl.innerHTML = "";
+
+  shuffle(WORDS).forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.textContent = item.word;
+
+    card.dataset.target = JSON.stringify(
+      Array.isArray(item.target) ? item.target : [item.target]
+    );
+
+    card.addEventListener("pointerdown", startDrag);
+    cardsEl.appendChild(card);
+  });
+}
+
+function startDrag(e) {
+  if (this.classList.contains("fixed")) return;
+
+  dragged = this;
+  originalParent = dragged.parentElement;
+  originalNext = dragged.nextSibling;
+
+  const rect = dragged.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
+
+  dragged.classList.add("dragging");
+  dragged.style.left = rect.left + "px";
+  dragged.style.top = rect.top + "px";
+  dragged.style.width = rect.width + "px";
+
+  document.body.appendChild(dragged);
+
+  moveDrag(e);
+
+  document.addEventListener("pointermove", moveDrag);
+  document.addEventListener("pointerup", endDrag);
+}
+
+function moveDrag(e) {
+  if (!dragged) return;
+
+  dragged.style.left = (e.clientX - offsetX) + "px";
+  dragged.style.top = (e.clientY - offsetY) + "px";
+
+  document.querySelectorAll(".target").forEach(t => t.classList.remove("active"));
+
+  const elem = document.elementFromPoint(e.clientX, e.clientY);
+  const target = elem ? elem.closest(".target") : null;
+
+  if (target) {
+    target.classList.add("active");
+  }
+}
+
+function endDrag(e) {
+  if (!dragged) return;
+
+  document.removeEventListener("pointermove", moveDrag);
+  document.removeEventListener("pointerup", endDrag);
+
+  document.querySelectorAll(".target").forEach(t => t.classList.remove("active"));
+
+  const elem = document.elementFromPoint(e.clientX, e.clientY);
+  const target = elem ? elem.closest(".target") : null;
+
+  const correctTargets = JSON.parse(dragged.dataset.target);
+
+  if (target && correctTargets.includes(target.dataset.target)) {
+    const slot = target.querySelector(".slot");
+
+    dragged.classList.remove("dragging");
+    dragged.classList.add("fixed");
+    dragged.style.left = "";
+    dragged.style.top = "";
+    dragged.style.width = "";
+
+    slot.appendChild(dragged);
+
+    score++;
+    placed++;
+    scoreEl.textContent = score;
+
+    messageEl.textContent = "Верно! Карточка закреплена.";
+    playGood();
+
+    if (placed === WORDS.length) {
+      finishEl.style.display = "block";
+      messageEl.textContent = "";
+    }
+  } else {
+    errors++;
+    errorsEl.textContent = errors;
+    messageEl.textContent = "Пока нет. Попробуй ещё раз.";
+
+    dragged.classList.remove("dragging");
+    dragged.style.left = "";
+    dragged.style.top = "";
+    dragged.style.width = "";
+
+    if (originalNext) {
+      originalParent.insertBefore(dragged, originalNext);
+    } else {
+      originalParent.appendChild(dragged);
+    }
+
+    playBad();
+  }
+
+  dragged = null;
+}
+
+function playGood() {
+  const audio = new AudioContext();
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+
+  osc.frequency.value = 720;
+  gain.gain.value = 0.08;
+
+  osc.connect(gain);
+  gain.connect(audio.destination);
+
+  osc.start();
+  osc.stop(audio.currentTime + 0.12);
+}
+
+function playBad() {
+  const audio = new AudioContext();
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+
+  osc.frequency.value = 180;
+  gain.gain.value = 0.08;
+
+  osc.connect(gain);
+  gain.connect(audio.destination);
+
+  osc.start();
+  osc.stop(audio.currentTime + 0.14);
+}
+
+function restartGame() {
+  score = 0;
+  errors = 0;
+  placed = 0;
+
+  scoreEl.textContent = score;
+  errorsEl.textContent = errors;
+  messageEl.textContent = "";
+  finishEl.style.display = "none";
+
+  createTargets();
+  createCards();
+}
+
+restartGame();
+</script>
+</body>
+</html>
